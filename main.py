@@ -103,7 +103,8 @@ CONFIG_SCHEMA = vol.Schema(
         {
             vol.Required("id"): str,
             vol.Optional("name"): Any(str, None), 
-            vol.Required("relay"): int,
+            vol.Required("relay_opening"): int,
+            vol.Required("relay_closing"): int,
             vol.Required("state"): int,
             vol.Optional("open"): int,
             vol.Optional("state_mode", default = DEFAULT_STATE_MODE): Any(None, 'normally_closed', 'normally_open'),

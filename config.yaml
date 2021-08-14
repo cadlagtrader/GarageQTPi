@@ -16,7 +16,8 @@ doors:
     -
         id:  'garage_door'
         name: #garage_door
-        relay: 21 
+        relay_opening: 21 
+        relay_closing: 21 
         state: 12
         open: 7
         state_mode: normally_closed #defaults to normally open, uncomment to switch
