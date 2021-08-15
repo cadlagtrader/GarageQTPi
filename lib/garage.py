@@ -1,4 +1,5 @@
 import time
+import logging
 import RPi.GPIO as GPIO
 from .eventhook import EventHook
 
@@ -19,10 +20,12 @@ class GarageDoor(object):
         # Config
         self.relay_opening_pin = config['relay_opening']
         self.relay_closing_pin = config['relay_closing']
+        self.relay_stop_pin = config['relay_stop']
         self.state_pin = config['state']
         self.id = config['id']
         self.mode = int(config.get('state_mode') == 'normally_closed')
         self.invert_relay = bool(config.get('invert_relay'))
+        self.check_state_before_command = bool(config.get('check_state_before_command'))
 
         # Setup
         self._state = None
@@ -35,6 +38,9 @@ class GarageDoor(object):
         # Initial output value = high if self.invert_relay is True
         GPIO.setup(self.relay_opening_pin, GPIO.OUT, initial=self.invert_relay)
         GPIO.setup(self.relay_closing_pin, GPIO.OUT, initial=self.invert_relay)
+        if self.relay_stop_pin is not None:
+            GPIO.setup(self.relay_stop_pin, GPIO.OUT, initial=self.invert_relay)
+
         GPIO.setup(self.state_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(
             self.state_pin,
@@ -51,16 +57,16 @@ class GarageDoor(object):
     # changes or do things differently depending on the intended action
 
     def open(self):
-        if self.state == 'closed':
+        if not self.check_state_before_command or self.state == 'closed':
             self.__press_open()
 
     def close(self):
-        if self.state == 'open':
+        if not self.check_state_before_command or self.state == 'open':
             self.__press_close()
 
     #No stop implementation. Open instead
     def stop(self):
-        self.__press_open()
+        self.__press_stop()
 
     # State is a read only property that actually gets its value from the pin
     @property
@@ -83,6 +89,14 @@ class GarageDoor(object):
         GPIO.output(self.relay_closing_pin, not self.invert_relay)
         time.sleep(SHORT_WAIT)
         GPIO.output(self.relay_closing_pin, self.invert_relay)
+
+    def __press_stop(self):
+        if self.relay_stop_pin is not None:
+            GPIO.output(self.relay_stop_pin, not self.invert_relay)
+            time.sleep(SHORT_WAIT)
+            GPIO.output(self.relay_stop_pin, self.invert_relay)
+        else:
+            logging.info("STOP not setup")
 
     # Provide an event for when the state pin changes
 

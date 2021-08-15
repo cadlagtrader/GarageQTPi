@@ -20,6 +20,7 @@ DEFAULT_PAYLOAD_AVAILABLE = "online"
 DEFAULT_PAYLOAD_NOT_AVAILABLE ="offline"
 DEFAULT_STATE_MODE = "normally_open"
 DEFAULT_INVERT_RELAY = False
+DEFAULT_CHECK_STATE_BEFORE_COMMAND = True #Check if the door state is closed before sending opening command (and opened before closing)
 
 print("GarageQTPi starting")
 discovery_info = {}
@@ -66,9 +67,9 @@ def execute_command(door, command):
     except BaseException:
         doorName = door.id
     logging.info("Executing command %s for door %s" % (command, doorName))
-    if command == "OPEN" and door.state == 'closed':
+    if command == "OPEN":
         door.open()
-    elif command == "CLOSE" and door.state == 'open':
+    elif command == "CLOSE":
         door.close()
     elif command == "STOP":
         door.stop()
@@ -105,10 +106,12 @@ CONFIG_SCHEMA = vol.Schema(
             vol.Optional("name"): Any(str, None), 
             vol.Required("relay_opening"): int,
             vol.Required("relay_closing"): int,
+            vol.Optional("relay_stop", default = None): int,
             vol.Required("state"): int,
             vol.Optional("open"): int,
             vol.Optional("state_mode", default = DEFAULT_STATE_MODE): Any(None, 'normally_closed', 'normally_open'),
             vol.Optional("invert_relay", default = DEFAULT_INVERT_RELAY): bool,
+            vol.Optional("check_state_before_command", default = DEFAULT_CHECK_STATE_BEFORE_COMMAND): bool,
             vol.Optional("state_topic"): str,
             vol.Required("command_topic"): str
         }
