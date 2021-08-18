@@ -21,6 +21,7 @@ DEFAULT_PAYLOAD_NOT_AVAILABLE ="offline"
 DEFAULT_STATE_MODE = "normally_open"
 DEFAULT_INVERT_RELAY = False
 DEFAULT_CHECK_STATE_BEFORE_COMMAND = True #Check if the door state is closed before sending opening command (and opened before closing)
+DEFAULT_DEVICE_CLASS = 'garage'
 
 print("GarageQTPi starting")
 discovery_info = {}
@@ -106,14 +107,15 @@ CONFIG_SCHEMA = vol.Schema(
             vol.Optional("name"): Any(str, None), 
             vol.Required("relay_opening"): int,
             vol.Required("relay_closing"): int,
-            vol.Optional("relay_stop", default = None): int,
+            vol.Optional("relay_stop", default = None): Any(int,None),
             vol.Required("state"): int,
             vol.Optional("open"): int,
             vol.Optional("state_mode", default = DEFAULT_STATE_MODE): Any(None, 'normally_closed', 'normally_open'),
             vol.Optional("invert_relay", default = DEFAULT_INVERT_RELAY): bool,
             vol.Optional("check_state_before_command", default = DEFAULT_CHECK_STATE_BEFORE_COMMAND): bool,
             vol.Optional("state_topic"): str,
-            vol.Required("command_topic"): str
+            vol.Required("command_topic"): str,
+            vol.Optional("device_class", default = DEFAULT_DEVICE_CLASS): str,
         }
     )]
     })
@@ -273,6 +275,9 @@ if __name__ == "__main__":
             discovery_info["availability_topic"] = availability_topic
             discovery_info["payload_available"] = payload_available
             discovery_info["payload_not_available"] = payload_not_available
+            discovery_info["device_class"] = doorCfg['device_class']
+            if doorCfg['relay_stop'] is None:
+               discovery_info["payload_stop"] = None
 
             client.publish(
                 config_topic,
