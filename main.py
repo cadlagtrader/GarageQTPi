@@ -108,8 +108,7 @@ CONFIG_SCHEMA = vol.Schema(
             vol.Optional("name"): Any(str, None), 
             vol.Required("state"): int,            
             vol.Optional("state_mode", default = DEFAULT_STATE_MODE): Any(None, 'normally_closed', 'normally_open'),
-            vol.Optional("state_topic"): str,
-            vol.Required("command_topic"): str,
+            vol.Optional("state_topic"): str,            
             vol.Optional("device_class", default = DEFAULT_DEVICE_CLASS): str,
         }
     )],
