@@ -12,6 +12,7 @@ from voluptuous import Any
 
 from lib.garage import GarageDoor
 from lib.garage import TwoSwitchGarageDoor
+from lib.garage import MotionSensor
 
 DEFAULT_DISCOVERY = False
 DEFAULT_DISCOVERY_PREFIX = "homeassistant"
@@ -25,7 +26,7 @@ DEFAULT_DEVICE_CLASS = 'garage'
 
 print("GarageQTPi starting")
 discovery_info = {}
-garage_doors = []
+garage_objects = []
 
 # Update the mqtt state topic
 
@@ -56,8 +57,8 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe(command_topic)
 
     # Update each door state in case it changed while disconnected.
-    for door in garage_doors:
-        client.publish(door.state_topic, door.state, retain=True)
+    for object in garage_objects:
+        client.publish(object.state_topic, object.state, retain=True)
 
 # Execute the specified command for a door
 
@@ -101,6 +102,17 @@ CONFIG_SCHEMA = vol.Schema(
 
         }
     ),
+    "motions": [vol.Schema(
+        {
+            vol.Required("id"): str,
+            vol.Optional("name"): Any(str, None), 
+            vol.Required("state"): int,            
+            vol.Optional("state_mode", default = DEFAULT_STATE_MODE): Any(None, 'normally_closed', 'normally_open'),
+            vol.Optional("state_topic"): str,
+            vol.Required("command_topic"): str,
+            vol.Optional("device_class", default = DEFAULT_DEVICE_CLASS): str,
+        }
+    )],
     "doors": [vol.Schema(
         {
             vol.Required("id"): str,
@@ -213,25 +225,28 @@ client.connect(host, port, 60)
 ### MAIN LOOP ###
 if __name__ == "__main__":
     # Create door objects and create callback functions
-    for doorCfg in CONFIG['doors']:
+    for type, cfg in [('door', conf) for conf in CONFIG['doors']]+[('motion', conf) for conf in CONFIG['motion']]: 
 
         # If no name it set, then set to id
-        if 'name' not in doorCfg:
-            doorCfg['name'] = doorCfg['id']
-        elif doorCfg['name'] is None:
-            doorCfg['name'] = doorCfg['id']
+        if 'name' not in cfg:
+            cfg['name'] = cfg['id']
+        elif cfg['name'] is None:
+            cfg['name'] = cfg['id']
 
         # Sanitize id value for mqtt
-        doorCfg['id'] = re.sub(r'\W+', '', re.sub(r'\s', ' ', doorCfg['id']))
+        cfg['id'] = re.sub(r'\W+', '', re.sub(r'\s', ' ', cfg['id']))
 
         if discovery is True:
-            base_topic = discovery_prefix + "/cover/" + doorCfg['id']
+            base_topic = discovery_prefix + "/cover/" + cfg['id']
             config_topic = base_topic + "/config"
-            doorCfg['command_topic'] = base_topic + "/set"
-            doorCfg['state_topic'] = base_topic + "/state"
+            if type == 'door':
+                cfg['command_topic'] = base_topic + "/set"
+            cfg['state_topic'] = base_topic + "/state"
 
-        command_topic = doorCfg['command_topic']
-        state_topic = doorCfg['state_topic']
+        
+        if type == 'door':
+            command_topic = cfg['command_topic']
+        state_topic = cfg['state_topic']
 
         #
         # If the open switch is specified use a two switch garage door
@@ -239,45 +254,55 @@ if __name__ == "__main__":
         # The interface is the same.  The two switch garage door
         # reports the states "open" and "closed"
         #
-        if "open" in doorCfg and doorCfg["open"] is not None:
-            door = TwoSwitchGarageDoor(doorCfg)
+        if type == 'door':
+            if "open" in cfg and cfg["open"] is not None:
+                object = TwoSwitchGarageDoor(cfg)
+            else:
+                object = GarageDoor(cfg)
         else:
-            door = GarageDoor(doorCfg)
+            object = MotionSensor(cfg)
+
 
         # Callback per door that passes a reference to the door
-        def on_message(client, userdata, msg, door=door):
-            execute_command(door, msg.payload.decode("utf-8"))
+        if type == 'door':
+            def on_message(client, userdata, msg, door=object):
+                execute_command(door, msg.payload.decode("utf-8"))
+            
+            client.message_callback_add(command_topic, on_message)
 
         # Callback per door that passes the doors state topic
         def on_state_change(value, topic=state_topic):
             update_state(value, topic)
-
-        client.message_callback_add(command_topic, on_message)
+        
 
         # You can add additional listeners here and they will all be executed
         # when the door state changes
-        door.onStateChange.addHandler(on_state_change)
+        object.onStateChange.addHandler(on_state_change)
 
         # Publish initial door state
-        client.publish(state_topic, door.state, retain=True)
+        client.publish(state_topic, object.state, retain=True)
 
         # Store Garage Door instance for use on reconnect
-        door.state_topic = state_topic
-        door.command_topic = command_topic
-        garage_doors.append(door)
+        object.state_topic = state_topic
+        if type == 'door':
+            object.command_topic = command_topic
+        garage_objects.append(object)
 
         # If discovery is enabled publish configuration
         if discovery is True:
 
-            discovery_info["name"] = doorCfg['name']
-            discovery_info["command_topic"] = doorCfg['command_topic']
-            discovery_info["state_topic"] = doorCfg['state_topic']
+            discovery_info["name"] = cfg['name']
+            if type == 'door':
+                discovery_info["command_topic"] = cfg['command_topic']
+                discovery_info["payload_available"] = payload_available
+                discovery_info["payload_not_available"] = payload_not_available
+                if cfg['relay_stop'] is None:
+                    discovery_info["payload_stop"] = None
+            discovery_info["state_topic"] = cfg['state_topic']
             discovery_info["availability_topic"] = availability_topic
-            discovery_info["payload_available"] = payload_available
-            discovery_info["payload_not_available"] = payload_not_available
-            discovery_info["device_class"] = doorCfg['device_class']
-            if doorCfg['relay_stop'] is None:
-               discovery_info["payload_stop"] = None
+            
+            discovery_info["device_class"] = cfg['device_class']
+            
 
             client.publish(
                 config_topic,

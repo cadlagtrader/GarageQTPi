@@ -13,6 +13,57 @@ SHORT_WAIT = .2  # S (200ms)
 """
 
 
+class MotionSensor(object):
+
+    def __init__(self, config):
+
+        # Config
+        self.state_pin = config['state']
+        self.id = config['id']
+        self.mode = int(config.get('state_mode') == 'normally_closed')
+        # Setup
+        self._state = None
+        self.onStateChange = EventHook()
+
+        # Set relay pin to output, state pin to input, and add a change
+        # listener to the state pin
+        GPIO.setwarnings(False)
+        GPIO.setmode(GPIO.BCM)
+        
+
+        GPIO.setup(self.state_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.add_event_detect(
+            self.state_pin,
+            GPIO.BOTH,
+            callback=self.__stateChanged,
+            bouncetime=300)
+
+    # Release rpi resources
+    def __del__(self):
+        GPIO.cleanup()
+
+
+    # State is a read only property that actually gets its value from the pin
+    @property
+    def state(self):
+        # Read the mode from the config. Then compare the mode to the current state. IE. If the circuit is normally closed and the state is 1 then the circuit is closed.
+        # and vice versa for normally open
+        state = GPIO.input(self.state_pin)
+        if state == self.mode:
+            return 'nothing'
+        else:
+            return 'detection'   
+
+    # Provide an event for when the state pin changes
+
+    def __stateChanged(self, channel):
+        if channel == self.state_pin:
+            # Had some issues getting an accurate value so we are going to wait for a short timeout
+            # after a statechange and then grab the state
+            time.sleep(SHORT_WAIT)
+            self.onStateChange.fire(self.state)
+
+
 class GarageDoor(object):
 
     def __init__(self, config):
