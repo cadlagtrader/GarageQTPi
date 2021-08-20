@@ -16,7 +16,7 @@ from lib.garage import MotionSensor
 
 DEFAULT_DISCOVERY = False
 DEFAULT_DISCOVERY_PREFIX = "homeassistant"
-DEFAULT_AVAILABILITY_TOPIC = "home-assistant/cover/availabilty"
+DEFAULT_AVAILABILITY_TOPIC = "home-assistant/{}/availabilty"
 DEFAULT_PAYLOAD_AVAILABLE = "online"
 DEFAULT_PAYLOAD_NOT_AVAILABLE ="offline"
 DEFAULT_STATE_MODE = "normally_open"
@@ -182,7 +182,7 @@ else:
 #
 
 if CONFIG['mqtt']['availability_topic'] is None:
-    availability_topic = DEFAULT_AVAILABILITY_TOPIC
+    availability_topic = DEFAULT_AVAILABILITY_TOPIC.format("cover" if type == 'door' else 'sensor')
 else:
     availability_topic = CONFIG['mqtt']['availability_topic']
 
@@ -236,7 +236,7 @@ if __name__ == "__main__":
         cfg['id'] = re.sub(r'\W+', '', re.sub(r'\s', ' ', cfg['id']))
 
         if discovery is True:
-            base_topic = discovery_prefix + "/cover/" + cfg['id']
+            base_topic = discovery_prefix + ("/cover/" if type == 'door' else 'sensor') + cfg['id']
             config_topic = base_topic + "/config"
             if type == 'door':
                 cfg['command_topic'] = base_topic + "/set"
