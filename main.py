@@ -182,7 +182,7 @@ else:
 #
 
 if CONFIG['mqtt']['availability_topic'] is None:
-    availability_topic = DEFAULT_AVAILABILITY_TOPIC.format("cover" if type == 'door' else 'sensor')
+    availability_topic = DEFAULT_AVAILABILITY_TOPIC.format("cover" if type == 'door' else 'binary_sensor')
 else:
     availability_topic = CONFIG['mqtt']['availability_topic']
 
@@ -236,7 +236,7 @@ if __name__ == "__main__":
         cfg['id'] = re.sub(r'\W+', '', re.sub(r'\s', ' ', cfg['id']))
 
         if discovery is True:
-            base_topic = discovery_prefix + ("/cover/" if type == 'door' else 'sensor') + cfg['id']
+            base_topic = discovery_prefix + ("/cover/" if type == 'door' else '/binary_sensor/') + cfg['id']
             config_topic = base_topic + "/config"
             if type == 'door':
                 cfg['command_topic'] = base_topic + "/set"
