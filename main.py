@@ -25,7 +25,7 @@ DEFAULT_CHECK_STATE_BEFORE_COMMAND = True #Check if the door state is closed bef
 DEFAULT_DEVICE_CLASS = 'garage'
 
 print("GarageQTPi starting")
-discovery_info = {}
+
 garage_objects = []
 
 # Update the mqtt state topic
@@ -225,7 +225,7 @@ client.connect(host, port, 60)
 if __name__ == "__main__":
     # Create door objects and create callback functions
     for type, cfg in [('door', conf) for conf in CONFIG['doors']]+[('sensor', conf) for conf in CONFIG['sensors']]: 
-
+        discovery_info = {}
         # If no name it set, then set to id
         if 'name' not in cfg:
             cfg['name'] = cfg['id']
