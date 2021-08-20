@@ -102,7 +102,7 @@ CONFIG_SCHEMA = vol.Schema(
 
         }
     ),
-    "motions": [vol.Schema(
+    "sensors": [vol.Schema(
         {
             vol.Required("id"): str,
             vol.Optional("name"): Any(str, None), 
@@ -225,7 +225,7 @@ client.connect(host, port, 60)
 ### MAIN LOOP ###
 if __name__ == "__main__":
     # Create door objects and create callback functions
-    for type, cfg in [('door', conf) for conf in CONFIG['doors']]+[('motion', conf) for conf in CONFIG['motion']]: 
+    for type, cfg in [('door', conf) for conf in CONFIG['doors']]+[('sensor', conf) for conf in CONFIG['sensors']]: 
 
         # If no name it set, then set to id
         if 'name' not in cfg:
