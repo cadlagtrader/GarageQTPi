@@ -50,9 +50,9 @@ class MotionSensor(object):
         # and vice versa for normally open
         state = GPIO.input(self.state_pin)
         if state == self.mode:
-            return 'off'
+            return 'OFF'
         else:
-            return 'on'   
+            return 'ON'   
 
     # Provide an event for when the state pin changes
 
