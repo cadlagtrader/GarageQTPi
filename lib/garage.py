@@ -38,7 +38,7 @@ class MotionSensor(object):
             callback=self.__stateChanged,
             bouncetime=300)
 
-    # Release rpi resources
+    # Release rpi resource
     def __del__(self):
         GPIO.cleanup()
 
@@ -50,9 +50,9 @@ class MotionSensor(object):
         # and vice versa for normally open
         state = GPIO.input(self.state_pin)
         if state == self.mode:
-            return 'nothing'
+            return 'off'
         else:
-            return 'detection'   
+            return 'on'   
 
     # Provide an event for when the state pin changes
 
