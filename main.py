@@ -23,6 +23,7 @@ DEFAULT_STATE_MODE = "normally_open"
 DEFAULT_INVERT_RELAY = False
 DEFAULT_CHECK_STATE_BEFORE_COMMAND = True #Check if the door state is closed before sending opening command (and opened before closing)
 DEFAULT_DEVICE_CLASS = 'garage'
+DEFAULT_OFF_DELAY = 5
 
 print("GarageQTPi starting")
 
@@ -110,6 +111,7 @@ CONFIG_SCHEMA = vol.Schema(
             vol.Optional("state_mode", default = DEFAULT_STATE_MODE): Any(None, 'normally_closed', 'normally_open'),
             vol.Optional("state_topic"): str,            
             vol.Optional("device_class", default = DEFAULT_DEVICE_CLASS): str,
+            vol.Optional("off_delay", default = DEFAULT_OFF_DELAY): int,
         }
     )],
     "doors": [vol.Schema(
@@ -297,6 +299,8 @@ if __name__ == "__main__":
                 discovery_info["payload_not_available"] = payload_not_available
                 if cfg['relay_stop'] is None:
                     discovery_info["payload_stop"] = None
+            else:
+                discovery_info["off_delay"] = cfg['off_delay']
             discovery_info["state_topic"] = cfg['state_topic']
             discovery_info["availability_topic"] = availability_topic
             
